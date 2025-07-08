@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # --- Setup Flask App ---
 app = Flask(__name__)
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+client = Groq(api_key="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")
 
 MAX_CHARS = 10_000
 MAX_ATTEMPTS = 3
