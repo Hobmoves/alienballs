@@ -2,12 +2,17 @@ import os
 import json
 import time
 import traceback
+import logging
 from flask import Flask, request, jsonify
 from groq import Groq
 
-# --- Setup ---
+# --- Setup Logging ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# --- Setup Flask App ---
 app = Flask(__name__)
-client = Groq(api_key="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")
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 MAX_CHARS = 10_000
 MAX_ATTEMPTS = 3
@@ -19,7 +24,7 @@ import json
 from collections import defaultdict
 """
 
-# Add root route to display a simple webpage
+# Root route for simple webpage
 @app.route('/')
 def home():
     return """
@@ -29,7 +34,7 @@ def home():
         <title>Alienballs</title>
     </head>
     <body>
-        <h1>Alien balls are working</h1>
+        <h1>Alienballs Terrain Generator</h1>
         <p>The server is operational. Use the /generate endpoint to generate terrain.</p>
     </body>
     </html>
@@ -45,19 +50,19 @@ def generate():
 
         script_output = call_groq_and_execute(search_value)
         chunked = convert_block_string_to_chunks(script_output)
+        logger.info(f"Generated {len(chunked)} chunks for theme: {search_value}")
         return jsonify(chunked)
 
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({ "error": f"Generation failed: {str(e)}" }), 500
-
+        logger.error(f"Generation failed: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": f"Generation failed: {str(e)}"}), 500
 
 def call_groq_and_execute(search_value: str) -> str:
     last_error = ""
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            print(f"🌀 Attempt {attempt}...")
-
+            logger.info(f"Attempt {attempt} for theme: {search_value}")
             response = client.chat.completions.create(
                 model="compound-beta-mini",
                 messages=[
@@ -113,17 +118,15 @@ Return ONLY code. No explanation. No markdown.
             return captured["result"]
 
         except Exception as e:
-            print(f"⚠️ Attempt {attempt} failed: {e}")
+            logger.warning(f"Attempt {attempt} failed: {str(e)}")
             last_error = str(e)
             time.sleep(1)
 
     raise RuntimeError(f"All {MAX_ATTEMPTS} attempts failed. Last error: {last_error}")
 
-
 def strip_code_blocks(text: str) -> str:
     lines = text.strip().splitlines()
     return "\n".join(line for line in lines if not line.strip().startswith("```")).strip()
-
 
 def convert_block_string_to_chunks(raw_json: str) -> dict:
     blocks = json.loads(raw_json)
@@ -150,10 +153,11 @@ def convert_block_string_to_chunks(raw_json: str) -> dict:
     if current:
         chunks[piece_index] = current
 
-    print(f"✅ {len(blocks)} blocks -> {len(chunks)} chunks")
+    logger.info(f"Converted {len(blocks)} blocks into {len(chunks)} chunks")
     return chunks
 
-
-# --- Debug Local Run ---
+# --- Run Application ---
 if __name__ == "__main__":
-    app.run(debug=True)
+    # For Render, use gunicorn; for local testing, allow Flask's debug server
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
