@@ -19,6 +19,22 @@ import json
 from collections import defaultdict
 """
 
+# Add root route to display a simple webpage
+@app.route('/')
+def home():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Alienballs</title>
+    </head>
+    <body>
+        <h1>Alien balls are working</h1>
+        <p>The server is operational. Use the /generate endpoint to generate terrain.</p>
+    </body>
+    </html>
+    """
+
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
@@ -136,6 +152,7 @@ def convert_block_string_to_chunks(raw_json: str) -> dict:
 
     print(f"✅ {len(blocks)} blocks -> {len(chunks)} chunks")
     return chunks
+
 
 # --- Debug Local Run ---
 if __name__ == "__main__":
