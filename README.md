@@ -1,2 +1,2 @@
 # alienballs (real)
-Pretty much, AI terrain generation for [McDiamondFire](mcdiamondfire.com)
+Pretty much, AI terrain generation for a minecraft server (mcdiamondfire.com)
